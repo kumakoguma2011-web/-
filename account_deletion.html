@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ミチシルベ - アカウント削除</title>
+  <style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;background:#f8fafc;color:#0f172a;margin:0}
+    .wrap{max-width:620px;margin:40px auto;padding:0 18px}.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    h1{font-size:22px}.muted{color:#64748b;font-size:14px;line-height:1.7}.warn{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:12px;color:#9a3412;font-size:13px;line-height:1.6}
+    label{display:block;font-size:13px;font-weight:700;margin:14px 0 6px}input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px}
+    button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#dc2626;color:#fff;font-weight:800;cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
+    .hidden{display:none}.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:12px;padding:14px;font-size:14px}.err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:12px;padding:14px;font-size:14px}
+    .check{display:flex;gap:8px;align-items:flex-start;margin-top:14px;font-size:13px}.check input{width:auto;margin-top:3px}
+  </style>
+</head>
+<body>
+<div class="wrap"><div class="card">
+  <h1>ミチシルベ アカウント削除</h1>
+  <p class="muted">このページから、ミチシルベのアカウントと関連データの削除を開始できます。アプリを再インストールする必要はありません。</p>
+  <div class="warn">削除すると、プロフィール、仮名化ルール、会話履歴、アカウント情報など、このアカウントに関連する保存データを削除します。削除後は元に戻せません。</div>
+  <div id="loginBox">
+    <label for="email">登録メールアドレス</label><input id="email" type="email" autocomplete="username">
+    <label for="password">パスワード</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn" type="button">本人確認して削除へ進む</button>
+  </div>
+  <div id="confirmBox" class="hidden">
+    <p class="muted">本人確認が完了しました。下の確認にチェックを入れると、アカウントを完全に削除します。</p>
+    <label class="check"><input id="confirm" type="checkbox"><span>アカウントと関連データが削除され、元に戻せないことを理解しました。</span></label>
+    <button id="deleteBtn" type="button" disabled>アカウントを完全に削除する</button>
+  </div>
+  <div id="msg" class="hidden"></div>
+</div></div>
+<script>
+let token='';
+const $=id=>document.getElementById(id);
+function show(cls,text){const el=$('msg');el.className=cls;el.textContent=text;el.classList.remove('hidden');}
+$('loginBtn').onclick=async()=>{
+  const email=$('email').value.trim(), password=$('password').value;
+  if(!email||!password){show('err','メールアドレスとパスワードを入力してください。');return;}
+  $('loginBtn').disabled=true;
+  try{
+    const r=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.message||'本人確認に失敗しました。');
+    token=j.access_token;
+    $('loginBox').classList.add('hidden');$('confirmBox').classList.remove('hidden');show('ok','本人確認が完了しました。削除内容を確認してください。');
+  }catch(e){show('err',e.message||'処理に失敗しました。');}
+  finally{$('loginBtn').disabled=false;}
+};
+$('confirm').onchange=()=>{$('deleteBtn').disabled=!$('confirm').checked};
+$('deleteBtn').onclick=async()=>{
+  $('deleteBtn').disabled=true;
+  try{
+    const r=await fetch('/account/data',{method:'DELETE',headers:{Authorization:`Bearer ${token}`}});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.message||'削除に失敗しました。');}
+    token='';$('confirmBox').classList.add('hidden');show('ok','アカウントと関連データの削除が完了しました。このページを閉じてください。');
+  }catch(e){show('err',e.message||'削除に失敗しました。');$('deleteBtn').disabled=false;}
+};
+</script>
+</body></html>

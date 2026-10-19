@@ -1,0 +1,4 @@
+Speech input: add to android/app/src/main/AndroidManifest.xml:
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+Use the OS file picker for TXT/MD/CSV/JSON. Do not add broad storage permission solely for file selection.

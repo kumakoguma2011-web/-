@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: career_ai
+      POSTGRES_USER: career_ai
+      POSTGRES_PASSWORD: career_ai_test_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_ai -d career_ai"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "55432:5432"
+
+  gemini-mock:
+    image: python:3.13-alpine
+    working_dir: /mock
+    volumes:
+      - ./tests/mock_gemini.py:/mock/mock_gemini.py:ro
+    command: ["python", "/mock/mock_gemini.py"]
+    ports:
+      - "58080:8080"
+
+  api:
+    build:
+      context: ./rust/career_ai_rust_v3
+      dockerfile: Dockerfile.integration
+    environment:
+      DATABASE_URL: postgres://career_ai:career_ai_test_password@postgres:5432/career_ai
+      JWT_SECRET: integration-test-secret-please-change-this-32-bytes-min
+      GEMINI_API_KEY: integration-test-key
+      GEMINI_BASE_URL: http://gemini-mock:8080
+      GEMINI_MODEL: gemini-test-model
+      BIND_ADDR: 0.0.0.0:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      gemini-mock:
+        condition: service_started
+    ports:
+      - "58081:8080"

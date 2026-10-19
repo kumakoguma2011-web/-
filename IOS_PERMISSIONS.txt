@@ -1,0 +1,5 @@
+Speech input: add to ios/Runner/Info.plist:
+<key>NSSpeechRecognitionUsageDescription</key>
+<string>音声入力をミチシルベへの相談文に変換するために使用します。</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>音声入力のためにマイクを使用します。</string>
